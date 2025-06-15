@@ -10,7 +10,7 @@ from pyrogram.types import (
     InputMediaVideo,
 )
 
-from AbhiXMusic import app
+from AbhiXMusic import app, LOGGER
 from AbhiXMusic.utils.database import (
     add_nonadmin_chat,
     get_authuser,
@@ -87,9 +87,22 @@ async def settings_back_markup(client, CallbackQuery: CallbackQuery, _):
     except:
         pass
     if CallbackQuery.message.chat.type == ChatType.PRIVATE:
-        await app.resolve_peer(OWNER_ID)
-        OWNER = OWNER_ID
+        # Check if the user is the owner
+        is_owner = False
+        try:
+            user = await app.resolve_peer(OWNER_ID)
+            if user.user_id == CallbackQuery.from_user.id:
+                is_owner = True
+        except Exception as e:
+            LOGGER(__name__).error(f"Failed to resolve OWNER_ID: {e}")
+            # If OWNER_ID resolution fails, assume user is not the owner
+            is_owner = False
+
         buttons = private_panel(_)
+        # Optionally, add admin settings button if the user is the owner
+        if is_owner:
+            buttons.append([InlineKeyboardButton(text="Admin Settings", callback_data="admin_settings")])
+        
         return await CallbackQuery.edit_message_media(
             InputMediaPhoto(
                 media=START_IMG_URL,
