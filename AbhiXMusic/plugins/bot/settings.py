@@ -10,7 +10,7 @@ from pyrogram.types import (
     InputMediaVideo,
 )
 
-from AbhiXMusic import app, LOGGER
+from AbhiXMusic import app
 from AbhiXMusic.utils.database import (
     add_nonadmin_chat,
     get_authuser,
@@ -53,8 +53,13 @@ async def settings_mar(client, message: Message, _):
 @app.on_callback_query(filters.regex("gib_source") & ~BANNED_USERS)
 @languageCB
 async def gib_repo(client, CallbackQuery, _):
+    current_media = getattr(CallbackQuery.message, 'video', None)
+    new_media = "https://graph.org/file/84d30d4fd04570c0e0256.mp4"
+    if current_media and current_media.file_id == new_media:
+        return
+
     await CallbackQuery.edit_message_media(
-        InputMediaVideo("https://graph.org/file/84d30d4fd04570c0e0256.mp4"),
+        InputMediaVideo(new_media),
         reply_markup=InlineKeyboardMarkup(
             [[InlineKeyboardButton(text="ʙᴀᴄᴋ", callback_data=f"settingsback_helper")]]
         ),
@@ -87,35 +92,66 @@ async def settings_back_markup(client, CallbackQuery: CallbackQuery, _):
     except:
         pass
     if CallbackQuery.message.chat.type == ChatType.PRIVATE:
-        # Check if the user is the owner
         is_owner = False
         try:
             user = await app.resolve_peer(OWNER_ID)
             if user.user_id == CallbackQuery.from_user.id:
                 is_owner = True
-        except Exception as e:
-            LOGGER(__name__).error(f"Failed to resolve OWNER_ID: {e}")
-            # If OWNER_ID resolution fails, assume user is not the owner
-            is_owner = False
+        except Exception:
+            pass
 
         buttons = private_panel(_)
-        # Optionally, add admin settings button if the user is the owner
         if is_owner:
-            buttons.append([InlineKeyboardButton(text="Admin Settings", callback_data="admin_settings")])
+            buttons.append([InlineKeyboardButton(text="Owner", callback_data="owner_redirect")])
         
+        current_media = getattr(CallbackQuery.message, 'photo', None)
+        current_caption = CallbackQuery.message.caption or ""
+        new_caption = _["start_2"].format(CallbackQuery.from_user.first_name, app.mention)
+
+        if (current_media and current_media.file_id == START_IMG_URL) and (current_caption == new_caption):
+            try:
+                return await CallbackQuery.edit_message_reply_markup(
+                    reply_markup=InlineKeyboardMarkup(buttons)
+                )
+            except MessageNotModified:
+                return
+
         return await CallbackQuery.edit_message_media(
             InputMediaPhoto(
                 media=START_IMG_URL,
-                caption=_["start_2"].format(
-                    CallbackQuery.from_user.first_name, app.mention),
+                caption=new_caption,
             ),
             reply_markup=InlineKeyboardMarkup(buttons),
         )
     else:
         buttons = setting_markup(_)
-        return await CallbackQuery.edit_message_reply_markup(
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
+        try:
+            return await CallbackQuery.edit_message_reply_markup(
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+        except MessageNotModified:
+            return
+
+@app.on_callback_query(filters.regex("owner_redirect") & ~BANNED_USERS)
+@languageCB
+async def owner_redirect(client, CallbackQuery: CallbackQuery, _):
+    try:
+        await CallbackQuery.answer()
+    except:
+        pass
+    owner_link = f"tg://user?id={OWNER_ID}"
+    await CallbackQuery.edit_message_text(
+        f"Click below to message the owner:\n[Owner]({owner_link})",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(text="Message Owner", url=owner_link),
+                    InlineKeyboardButton(text="Back", callback_data="settingsback_helper"),
+                ]
+            ]
+        ),
+        disable_web_page_preview=False,
+    )
 
 
 @app.on_callback_query(
