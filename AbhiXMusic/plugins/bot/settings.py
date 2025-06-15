@@ -9,6 +9,7 @@ from pyrogram.types import (
     InputMediaPhoto,
     InputMediaVideo,
 )
+import logging
 
 from AbhiXMusic import app
 from AbhiXMusic.utils.database import (
@@ -38,6 +39,9 @@ from AbhiXMusic.utils.inline.settings import (
 from AbhiXMusic.utils.inline.start import private_panel
 from config import BANNED_USERS, OWNER_ID, MUSIC_BOT_NAME, START_IMG_URL
 
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @app.on_message(
     filters.command(["settings", "setting"]) & filters.group & ~BANNED_USERS
@@ -97,12 +101,16 @@ async def settings_back_markup(client, CallbackQuery: CallbackQuery, _):
             user = await app.resolve_peer(OWNER_ID)
             if user.user_id == CallbackQuery.from_user.id:
                 is_owner = True
-        except Exception:
+                logger.info(f"User {CallbackQuery.from_user.id} is the owner (OWNER_ID: {OWNER_ID})")
+            else:
+                logger.info(f"User {CallbackQuery.from_user.id} is NOT the owner (OWNER_ID: {OWNER_ID})")
+        except Exception as e:
+            logger.error(f"Error resolving OWNER_ID {OWNER_ID}: {str(e)}")
             pass
 
         buttons = private_panel(_)
-        if is_owner:
-            buttons.append([InlineKeyboardButton(text="Owner", callback_data="owner_redirect")])
+        # Always show the Owner button
+        buttons.append([InlineKeyboardButton(text="Owner", callback_data="owner_redirect")])
         
         current_media = getattr(CallbackQuery.message, 'photo', None)
         current_caption = CallbackQuery.message.caption or ""
@@ -137,21 +145,37 @@ async def settings_back_markup(client, CallbackQuery: CallbackQuery, _):
 async def owner_redirect(client, CallbackQuery: CallbackQuery, _):
     try:
         await CallbackQuery.answer()
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Error answering callback query: {str(e)}")
+        return
+
     owner_link = f"tg://user?id={OWNER_ID}"
-    await CallbackQuery.edit_message_text(
-        f"Click below to message the owner:\n[Owner]({owner_link})",
-        reply_markup=InlineKeyboardMarkup(
-            [
+    try:
+        await CallbackQuery.edit_message_text(
+            f"Click below to message the owner:\n[Owner]({owner_link})",
+            reply_markup=InlineKeyboardMarkup(
                 [
-                    InlineKeyboardButton(text="Message Owner", url=owner_link),
-                    InlineKeyboardButton(text="Back", callback_data="settingsback_helper"),
+                    [
+                        InlineKeyboardButton(text="Message Owner", url=owner_link),
+                        InlineKeyboardButton(text="Back", callback_data="settingsback_helper"),
+                    ]
                 ]
-            ]
-        ),
-        disable_web_page_preview=False,
-    )
+            ),
+            disable_web_page_preview=False,
+        )
+        logger.info(f"Redirecting user {CallbackQuery.from_user.id} to owner link: {owner_link}")
+    except Exception as e:
+        logger.error(f"Error redirecting to owner link {owner_link}: {str(e)}")
+        await CallbackQuery.edit_message_text(
+            f"Could not redirect to the owner. Please contact them manually using this ID: {OWNER_ID}",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(text="Back", callback_data="settingsback_helper"),
+                    ]
+                ]
+            ),
+        )
 
 
 @app.on_callback_query(
