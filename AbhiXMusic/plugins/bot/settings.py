@@ -109,7 +109,7 @@ async def settings_back_markup(client, CallbackQuery: CallbackQuery, _):
             pass
 
         buttons = private_panel(_)
-        # Always show the Owner button
+        # Custom Owner button is already here
         buttons.append([InlineKeyboardButton(text="Owner", callback_data="owner_redirect")])
         
         current_media = getattr(CallbackQuery.message, 'photo', None)
@@ -149,10 +149,10 @@ async def owner_redirect(client, CallbackQuery: CallbackQuery, _):
         logger.error(f"Error answering callback query: {str(e)}")
         return
 
-    owner_link = f"tg://user?id={OWNER_ID}"
+    owner_link = "tg://resolve?domain=ceo_of_secularism"
     try:
         await CallbackQuery.edit_message_text(
-            f"Click below to message the owner:\n[Owner]({owner_link})",
+            f"Click below to message the owner:\n[Message Owner]({owner_link})",
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
@@ -167,7 +167,7 @@ async def owner_redirect(client, CallbackQuery: CallbackQuery, _):
     except Exception as e:
         logger.error(f"Error redirecting to owner link {owner_link}: {str(e)}")
         await CallbackQuery.edit_message_text(
-            f"Could not redirect to the owner. Please contact them manually using this ID: {OWNER_ID}",
+            f"Could not redirect to the owner. Please contact them manually at @ceo_of_secularism",
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
