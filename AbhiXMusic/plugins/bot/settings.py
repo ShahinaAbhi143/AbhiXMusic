@@ -109,12 +109,12 @@ async def settings_back_markup(client, CallbackQuery: CallbackQuery, _):
             pass
 
         buttons = private_panel(_)
-        # Custom Owner button is already here
-        buttons.append([InlineKeyboardButton(text="Owner", callback_data="owner_redirect")])
+        # Custom Owner button with stylish text
+        buttons.append([InlineKeyboardButton(text="Chat with Owner 💖🌟", callback_data="owner_redirect")])
         
         current_media = getattr(CallbackQuery.message, 'photo', None)
         current_caption = CallbackQuery.message.caption or ""
-        new_caption = _["start_2"].format(CallbackQuery.from_user.first_name, app.mention)
+        new_caption = _["start_2"].format(CallbackQuery.from_user.first_name, app.mention) + "\n\n⚡ Wᴀɪᴛ... ⚡\n✨ Fᴀᴛʜᴇʀ... ✨\n🔥 Iꜱ Cᴏᴍɪɴɢ 🔥"
 
         if (current_media and current_media.file_id == START_IMG_URL) and (current_caption == new_caption):
             try:
@@ -152,12 +152,12 @@ async def owner_redirect(client, CallbackQuery: CallbackQuery, _):
     owner_link = "tg://resolve?domain=ceo_of_secularism"
     try:
         await CallbackQuery.edit_message_text(
-            f"Click below to message the owner:\n[Message Owner]({owner_link})",
+            f"||Sᴀʏ Pᴀᴘᴀ Tᴏ Oᴡɴᴇʀ||\n👉 [Message Owner 🌟]({owner_link})",
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton(text="Message Owner", url=owner_link),
-                        InlineKeyboardButton(text="Back", callback_data="settingsback_helper"),
+                        InlineKeyboardButton(text="Message Owner 🌟", url=owner_link),
+                        InlineKeyboardButton(text="🔙 Back", callback_data="settingsback_helper"),
                     ]
                 ]
             ),
@@ -167,11 +167,11 @@ async def owner_redirect(client, CallbackQuery: CallbackQuery, _):
     except Exception as e:
         logger.error(f"Error redirecting to owner link {owner_link}: {str(e)}")
         await CallbackQuery.edit_message_text(
-            f"Could not redirect to the owner. Please contact them manually at @ceo_of_secularism",
+            f"❌ Could not redirect to the owner. Please contact them manually at @ceo_of_secularism 💬",
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton(text="Back", callback_data="settingsback_helper"),
+                        InlineKeyboardButton(text="🔙 Back", callback_data="settingsback_helper"),
                     ]
                 ]
             ),
