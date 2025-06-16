@@ -26,7 +26,7 @@ def private_panel(_):
         ],
         [InlineKeyboardButton(text=_["S_B_4"], callback_data="settings_back_helper")],
         [
-            InlineKeyboardButton(text=_["S_B_5"], url=f"tg://user?id={config.OWNER_ID}"),  # Changed to URL instead of user_id
+            InlineKeyboardButton(text=_["S_B_5"], url="tg://resolve?domain=ceo_of_secularism"),
             InlineKeyboardButton(text=_["S_B_2"], url=config.SUPPORT_CHAT),
         ],
         [
