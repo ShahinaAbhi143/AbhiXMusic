@@ -92,7 +92,7 @@ async def start_pm(client, message: Message, _):
             await lol.edit_text(f"🌸 𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐌𝐲 𝐋𝐨𝐯𝐞 {message.from_user.mention} 🌸 🥳")
             await lol.edit_text(f"💖 𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐌𝐲 𝐋𝐨𝐯𝐞 {message.from_user.mention} 💖 💥")
             await lol.edit_text(f"✨ 𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐌𝐲 𝐋𝐨𝐯𝐞 {message.from_user.mention} ✨ 🤩")
-            await lol.edit_text(f"💞 𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐌𝐲 𝐋𝐨𝐯𝐞 {message.from_user.mention} 💞 💌")
+            await lol.edit_text(f"💞 W𝐞𝐥𝐜𝐨𝐦𝐞 𝐌𝐲 𝐋𝐨𝐯𝐞 {message.from_user.mention} 💞 💌")
             await lol.edit_text(f"🌟 𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐌𝐲 𝐋𝐨𝐯𝐞 {message.from_user.mention} 🌟 💕")
             await lol.delete()
 
@@ -113,14 +113,63 @@ async def start_pm(client, message: Message, _):
             await asyncio.sleep(0.1)
             await lols.edit_text("💫❤️ 𝐒𝐭𝐚𝐫𝐭𝐢𝐧")
             await asyncio.sleep(0.1)
-            await lols.edit_text("🌸💞 𝐒𝐭𝐚𝐫𝐭𝐢𝐧𝐠")
+            await lols.edit_text("🌸💞 �{S𝐭𝐚𝐫𝐭𝐢𝐧𝐠")
             await asyncio.sleep(0.1)
             await lols.edit_text("💖✨ 𝐒𝐭𝐚𝐫𝐭𝐢𝐧𝐠 🌟")
             await asyncio.sleep(0.1)
             await lols.edit_text("🌟💕 𝐒𝐭𝐚𝐫𝐭𝐢𝐧𝐠 ✨")
             await asyncio.sleep(0.1)
             await lols.edit_text("💫❤️ 𝐒𝐭𝐚𝐫𝐭𝐢𝐧𝐠 💖")
-            await lols.edit_text("🌸💞 𝐒𝐭𝐚𝐫𝐭𝐢𝐧𝐠 💞")
+            await lols.edit_text("🌸💞 𝐒𝐭𝐚𝐫𝐭𝐢�{n𝐠 💞")
+
+            # Father is coming animation
+            father = await message.reply_text("⚡")
+            await asyncio.sleep(0.1)
+            await father.edit_text("⚡ W")
+            await asyncio.sleep(0.1)
+            await father.edit_text("✨ Wᴀ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("🔥 Wᴀɪ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("⚡ Wᴀɪᴛ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("✨ Wᴀɪᴛ...")
+            await asyncio.sleep(0.1)
+            await father.edit_text("🔥 Wᴀɪᴛ... F")
+            await asyncio.sleep(0.1)
+            await father.edit_text("⚡ Wᴀɪᴛ... Fᴀ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("✨ Wᴀɪᴛ... Fᴀᴛ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("🔥 Wᴀɪᴛ... Fᴀᴛʜ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("⚡ Wᴀɪᴛ... Fᴀᴛʜᴇ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("✨ Wᴀɪᴛ... Fᴀᴛʜᴇʀ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("🔥 Wᴀɪᴛ... Fᴀᴛʜᴇʀ I")
+            await asyncio.sleep(0.1)
+            await father.edit_text("⚡ Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("✨ Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ C")
+            await asyncio.sleep(0.1)
+            await father.edit_text("🔥 Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ Cᴏ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("⚡ Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ Cᴏᴍ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("✨ Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ Cᴏᴍɪ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("🔥 Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ Cᴏᴍɪɴ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("⚡ Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ Cᴏᴍɪɴɢ")
+            await asyncio.sleep(0.1)
+            await father.edit_text("✨ Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ Cᴏᴍɪɴɢ 🔥")
+            await asyncio.sleep(0.1)
+            await father.edit_text("🔥 Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ Cᴏᴍɪɴɢ ⚡")
+            await asyncio.sleep(0.1)
+            await father.edit_text("⚡ Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ Cᴏᴍɪɴɢ ✨")
+            await asyncio.sleep(0.1)
+            await father.delete()
 
             # Sparkle and heart animation
             sparkle = await message.reply_text("✨💖✨")
@@ -151,13 +200,14 @@ async def start_pm(client, message: Message, _):
         await lols.delete()
         await m.delete()
 
-        # Final welcome message with dynamic user mention
+        # Final welcome message with dynamic user mention and animation text
         photo_caption = (
             f"нєу {message.from_user.mention}, 🥀\n\n"
             f"๏ ᴛʜɪs ɪs test !\n\n"
             f"➻ ᴀ ғᴀsᴛ & ᴘᴏᴡᴇʀғᴜʟ ᴛᴇʟᴇɢʀᴀᴍ ᴍᴜsɪᴄ ᴘʟᴀʏᴇʀ ʙᴏᴛ ᴡɪᴛʜ sᴏᴍᴇ ᴀᴡᴇsᴏᴍᴇ ғᴇᴀᴛᴜʀᴇs.\n\n"
             f"Sᴜᴘᴘᴏʀᴛᴇᴅ Pʟᴀᴛғᴏʀᴍs : ʏᴏᴜᴛᴜʙᴇ, sᴘᴏᴛɪғʏ, ʀᴇssᴏ, ᴀᴘᴘʟᴇ ᴍᴜsɪᴄ ᴀɴᴅ sᴏᴜɴᴅᴄʟᴏᴜᴅ.\n"
             f"──────────────────\n"
+            f"⚡ Wᴀɪᴛ... Fᴀᴛʜᴇʀ Iꜱ Cᴏᴍɪɴɢ ✨\n"
             f"๏ ᴄʟɪᴄᴋ ᴏɴ ᴛʜᴇ ʜᴇʟᴩ ʙᴜᴛᴛᴏɴ ᴛᴏ ɢᴇᴛ ɪɴғᴏʀᴍᴀᴛɪᴏɴ ᴀʙᴏᴜᴛ ᴍʏ ᴍᴏᴅᴜʟᴇs ᴀɴᴅ ᴄᴏᴍᴍᴀɴᴅs."
         )
         await message.reply_photo(
