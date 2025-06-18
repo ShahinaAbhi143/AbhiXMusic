@@ -95,5 +95,5 @@ async def cancelcmd(_, message):
         return await message.reply_text("**ᴛᴀɢɢɪɴɢ ᴘʀᴏᴄᴇss sᴜᴄᴄᴇssғᴜʟʟʏ sᴛᴏᴘᴘᴇᴅ!**")
 
     else:
-        await message.reply_text("**ɴᴏ ᴘʀᴏᴄᴇss ᴏɴɢᴏɪɴɢ!**")
+        await message.reply_text("**Nᴏ Pʀᴏᴄᴇꜱꜱ Oɴɢᴏɪɴɢ! Nᴏᴡ Sᴀʏ ||PᴀPᴀ|| Tᴏ ||@ceo_of_secularism||**")
         return
