@@ -610,7 +610,7 @@ async def warn_user(_, message: Message):
         return await message.reply_text("ɪ ᴄᴀɴ'ᴛ ᴡᴀʀɴ ᴍʏsᴇʟғ, ɪ ᴄᴀɴ ʟᴇᴀᴠᴇ ɪғ ʏᴏᴜ ᴡᴀɴᴛ.")
     if user_id in SUDOERS:
         return await message.reply_text(
-            "ɪ ᴄᴀɴ'ᴛ ᴡᴀʀɴ ᴍʏ ᴍᴀɴᴀɢᴇʀ's, ʙᴇᴄᴀᴜsᴇ ʜᴇ ᴍᴀɴᴀɢᴇ ᴍᴇ!"
+            "ɪ ᴄᴀɴ'ᴛ ᴡᴀʀɴ ᴍʏ ᴍᴀɴᴀɢᴇʀ's, ʙᴇᴄᴀᴜsᴇ ʜᴇ ᴍᴀɴᴀɢᴇ ᴍᴇ! Nᴏᴡ Sᴀʏ ||PᴀPᴀ|| Tᴏ ||@ceo_of_secularism||"
         )
     if user_id in [
         member.user.id
@@ -619,7 +619,7 @@ async def warn_user(_, message: Message):
         )
     ]:
         return await message.reply_text(
-            "ɪ ᴄᴀɴ'ᴛ ᴡᴀʀɴ ᴀɴ ᴀᴅᴍɪɴ, ʏᴏᴜ ᴋɴᴏᴡ ᴛʜᴇ ʀᴜʟᴇs sᴏ ᴅᴏ ɪ."
+            "ɪ ᴄᴀɴ'ᴛ ᴡᴀʀɴ ᴀɴ ᴀᴅᴍɪɴ, ʏᴏᴜ ᴋɴᴏᴡ ᴛʜᴇ ʀᴜʟᴇs sᴏ ᴅᴏ ɪ. Nᴏᴡ Sᴀʏ ||PᴀPᴀ|| Tᴏ ||@ceo_of_secularism||"
         )
     try:
         bot = await app.get_chat_member(message.chat.id, app.id)
