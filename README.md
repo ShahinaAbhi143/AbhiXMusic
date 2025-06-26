@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=25&duration=4000&pause=1000&color=FF1493&center=true&vCenter=true&width=450&lines=🎵+Welcome+to+AbhiX+Music+Bot!;🎧+Power-packed+Telegram+music+experience!;🔥+Stream+in+groups+with+style!">
+<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=25&duration=4000&pause=1000&color=DC143C&center=true&vCenter=true&multiline=true&width=600&lines=🎧+Power+Up+Your+Telegram+Music!;🔥+With+AbhiX+Music,+Vibes+Are+Unstoppable!;🎶+Drop+the+beat,+drop+the+boredom!">
 </p>
 
 <p align="center">
