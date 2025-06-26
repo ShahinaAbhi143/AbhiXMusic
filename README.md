@@ -71,7 +71,7 @@
    ```bash
    pip3 install -U -r requirements.txt
    ```
-7. **Create .env  with sample.env**
+7. **Create .env with sample.env**
    ```bash
    cp sample.env .env
    ```
@@ -82,7 +82,7 @@
    ```
    - Edit .env with your values.
    - Press `I` button on keyboard to start editing.
-   - Press `Ctrl + C`  once you are done with editing vars and type `:wq` to save .env or `:qa` to exit editing.
+   - Press `Ctrl + C` once you are done with editing vars and type `:wq` to save .env or `:qa` to exit editing.
 9. **Installing tmux**
     ```bash
     sudo apt install tmux -y && tmux
