@@ -35,6 +35,7 @@
 **𝙏𝙀𝙎𝙏 𝘽𝙊𝙏 ➣ [˹𝐀ʙʜɪ ꭙ 𝐂ʀᴇᴡ ꭙ 𝐌ᴜꜱɪᴄ™ ˹ʙꜱ](https://t.me/CrewMusic_bot)**
 
 
+
 <img src="https://readme-typing-svg.herokuapp.com?color=FF0000&width=420&lines=⚠️𝗙𝗢𝗥𝗞+𝗧𝗛𝗜𝗦+𝗥𝗘𝗣𝗢+𝗙𝗜𝗥𝗦𝗧𝗟𝗬⚠️">
 
 <h3 align="center">
@@ -71,7 +72,7 @@
    ```bash
    pip3 install -U -r requirements.txt
    ```
-7. **Create .env with sample.env**
+7. **Create .env  with sample.env**
    ```bash
    cp sample.env .env
    ```
@@ -82,7 +83,7 @@
    ```
    - Edit .env with your values.
    - Press `I` button on keyboard to start editing.
-   - Press `Ctrl + C` once you are done with editing vars and type `:wq` to save .env or `:qa` to exit editing.
+   - Press `Ctrl + C`  once you are done with editing vars and type `:wq` to save .env or `:qa` to exit editing.
 9. **Installing tmux**
     ```bash
     sudo apt install tmux -y && tmux
