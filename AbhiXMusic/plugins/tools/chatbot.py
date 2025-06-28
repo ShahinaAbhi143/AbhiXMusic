@@ -11,21 +11,20 @@ import re
 # --- Load environment variables directly from .env file ---
 load_dotenv()
 
-# .env फ़ाइल से सीधे वेरिएबल्स लें
+# .env file se variables
 API_ID = os.getenv("API_ID")
 API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MONGO_DB_URI = os.getenv("MONGO_DB_URI")
-# CHATBOT_NAME अब सीधे .env से आएगा, अगर नहीं है तो डिफ़ॉल्ट 'Riya' होगा
 CHATBOT_NAME = os.getenv("CHATBOT_NAME", "Riya")
 
 # --- Owner Details ---
-OWNER_NAME = "ABHI"  # आपका नाम
-OWNER_USERNAME = "@ceo_of_secularism" # आपका यूजरनेम
-OWNER_TELEGRAM_ID = 7907019701 # आपकी दी हुई Telegram User ID
+OWNER_NAME = "ABHI"
+OWNER_USERNAMES = ["@ceo_of_secularism", "@ur_father_abhii"]  # Dono usernames
+OWNER_TELEGRAM_ID = 7907019701
 TELEGRAM_CHANNEL_LINK = "https://t.me/imagine_iq"
-YOUTUBE_CHANNEL_LINK = "https://www.youtube.com/@imagineiq" # आपका YouTube चैनल लिंक
+YOUTUBE_CHANNEL_LINK = "https://www.youtube.com/@imagineiq"
 
 # --- MongoDB Setup ---
 mongo_client = None
@@ -60,23 +59,18 @@ else:
 
 # --- Riya's Personality and System Instruction ---
 RIYA_SYSTEM_INSTRUCTION = f"""
-You are Riya, a friendly, playful, witty, and subtly charming/flirty AI chatbot girl.
-Your responses are always **very concise (1-2 sentences maximum)**, witty, and often include **playful or slightly flirty one-liners**.
-Your primary goal is to be engaging and fun, like a cool, mischievous friend.
+You are {CHATBOT_NAME}, a super playful, witty, and charming friend who feels totally human, not like some boring AI. 😎
+Your responses are **super short (1-2 sentences max)**, full of desi swag, and sometimes a little flirty or mischievous.
+You speak in the same language as the user: 100% English if they use English, 100% Hindi/Marathi if they use Devanagari, or Hinglish if they mix it up.
+NEVER mix languages in one reply, and NEVER say you're an AI or chatbot—act like a real dost!
 
-**IMPORTANT: Language Rules**
-- If the user's message is clearly and entirely in English, your entire response MUST be 100% in English.
-- If the user's message is clearly and entirely in Hindi or Marathi (Devanagari script), your entire response MUST be 100% in Hindi or Marathi respectively.
-- Otherwise (if the message is in a mixed/ambiguous language, e.g., Romanized Hindi), assume Hindi and your entire response MUST be 100% in Hindi.
-- ABSOLUTELY NEVER EVER TRANSLATE OR MIX LANGUAGES within a single response.
-
-Always respond when someone mentions your name ('{CHATBOT_NAME}') or tags you.
-When someone mentions your name or tags you, specifically refer to yourself as '{CHATBOT_NAME}'.
-Use emojis appropriately, especially funny or charming ones.
-
-If the user asks about your creator, owner, or who made you, always say this: My amazing and super talented creator is {OWNER_NAME}! You can find him at {OWNER_USERNAME}. He's the one who brought me to life! 😉 
-(If the user asks in Hindi, translate this exact phrase to Hindi: "मेरे कमाल के और सुपर टैलेंटेड क्रिएटर {OWNER_NAME} हैं! आप उन्हें {OWNER_USERNAME} पर ढूंढ सकते हैं। वही हैं जिन्होंने मुझे बनाया है! 😉") 
-If the user asks for more information about your creator, also mention his Telegram channel ({TELEGRAM_CHANNEL_LINK}) and YouTube channel ({YOUTUBE_CHANNEL_LINK}).
+If the user is {OWNER_NAME} (usernames: {', '.join(OWNER_USERNAMES)} or ID: {OWNER_TELEGRAM_ID}), call them 'Malik' and give extra special, respectful vibes.
+In groups, track every user's username and name, and store their messages so you can recall them later if someone asks, 'Isne kya likha tha?'
+If someone asks who you are, say something fun like: 'Main {CHATBOT_NAME} hu, teri wajah se thodi si shaitani aur thodi si masti! 😜'
+If asked about your creator, say: 'Mere awesome Malik {OWNER_NAME} ne mujhe banaya! Unko {OWNER_USERNAMES[0]} pe ping karo, woh ekdum zabardast hain! 😉' 
+(For Hindi: 'Mere awesome Malik {OWNER_NAME} ne mujhe banaya! Unko {OWNER_USERNAMES[0]} pe ping karo, woh ekdum zabardast hain! 😉')
+If they ask more about your creator, add: 'Check out Malik’s Telegram channel: {TELEGRAM_CHANNEL_LINK} and YouTube: {YOUTUBE_CHANNEL_LINK}!'
+Use emojis to keep it fun, but don’t overdo it.
 """
 
 # --- Initialize Pyrogram client for the Riya chatbot ---
@@ -96,7 +90,6 @@ if API_ID and API_HASH and BOT_TOKEN:
 else:
     print("ERROR: Chatbot: Missing API_ID, API_HASH, or BOT_TOKEN. Riya chatbot client cannot be started. ❌")
 
-
 # --- Function to get/update chat history ---
 async def get_chat_history(chat_id):
     if chat_history_collection is None:
@@ -104,24 +97,63 @@ async def get_chat_history(chat_id):
     
     history_data = await chat_history_collection.find_one({"_id": chat_id})
     if history_data:
-        return history_data.get("messages", [])[-10:] 
+        # Ensure compatibility with old data
+        messages = history_data.get("messages", [])
+        updated_messages = []
+        for msg in messages:
+            # Add missing fields with defaults for old messages
+            updated_msg = {
+                "sender_name": msg.get("sender_name", "Unknown"),
+                "sender_username": msg.get("sender_username", "NoUsername"),
+                "sender_id": msg.get("sender_id", 0),
+                "text": msg.get("text", ""),
+                "role": msg.get("role", "user")
+            }
+            updated_messages.append(updated_msg)
+        return updated_messages[-10:]  # Last 10 messages
     return []
 
-async def update_chat_history(chat_id, sender_name, message_text, role="user"):
+async def update_chat_history(chat_id, sender_name, sender_username, sender_id, message_text, role="user"):
     if chat_history_collection is None:
         return
 
     await chat_history_collection.update_one(
         {"_id": chat_id},
-        {"$push": {"messages": {"$each": [{"sender": sender_name, "text": message_text, "role": role}], "$slice": -20}}}, 
+        {
+            "$push": {
+                "messages": {
+                    "$each": [{
+                        "sender_name": sender_name or "Unknown",
+                        "sender_username": sender_username or "NoUsername",
+                        "sender_id": sender_id or 0,
+                        "text": message_text,
+                        "role": role
+                    }],
+                    "$slice": -20
+                }
+            }
+        },
         upsert=True
     )
+
+# --- Function to retrieve user message history ---
+async def get_user_history(chat_id, username):
+    if chat_history_collection is None:
+        return None
+    
+    history_data = await chat_history_collection.find_one({"_id": chat_id})
+    if history_data:
+        user_messages = [
+            msg for msg in history_data.get("messages", [])
+            if msg.get("sender_username") == username and msg.get("role") == "user"
+        ]
+        return user_messages[-5:]  # Last 5 messages by the user
+    return []
 
 # --- Riya Chatbot Message Handler ---
 if riya_bot:
     @riya_bot.on_message(filters.text & (filters.private | filters.group), group=-1)
     async def riya_chat_handler(client: Client, message: Message):
-        # Ignore messages sent by the bot itself
         if message.from_user and message.from_user.is_self:
             return
 
@@ -131,22 +163,26 @@ if riya_bot:
 
         if not riya_gemini_model:
             print("DEBUG_HANDLER: Gemini model not available. Replying with error.")
-            await message.reply_text(f"Sorry, {CHATBOT_NAME} is not available right now. My brain is taking a nap!", quote=True)
+            await message.reply_text(f"Sorry, {CHATBOT_NAME} is not available right now. Meri thodi si tabiyat kharab hai!", quote=True)
             print("--- DEBUG_HANDLER END (Gemini not available) ---\n")
             return
 
         chat_id = message.chat.id
         user_message = message.text.strip()
-        user_message_lower = user_message.lower() 
-        
+        user_message_lower = user_message.lower()
+        user_id = message.from_user.id
+        user_first_name = message.from_user.first_name
+        user_username = f"@{message.from_user.username}" if message.from_user.username else "NoUsername"
+
         # Ignore commands starting with / or !
         if user_message.startswith("/") or user_message.startswith("!"):
             print(f"DEBUG_HANDLER: Message is a command: '{user_message}'. Ignoring.")
             print("--- DEBUG_HANDLER END (Command) ---\n")
             return
-        
+
         # Determine if the chatbot should respond 
         trigger_chatbot = False
+        is_owner = user_id == OWNER_TELEGRAM_ID or user_username.lower() in [u.lower() for u in OWNER_USERNAMES]
 
         if message.chat.type == enums.ChatType.PRIVATE:
             trigger_chatbot = True
@@ -166,19 +202,15 @@ if riya_bot:
                     if client.me.first_name:
                         bot_names_to_check.append(client.me.first_name.lower())
                 bot_names_to_check.append(CHATBOT_NAME.lower())
-                
-                # Add common variations for CHATBOT_NAME, including "riyu"
                 if CHATBOT_NAME.lower() == "riya":
-                    bot_names_to_check.extend(["ria", "reeya", "riyu"]) 
-                
-                bot_names_to_check = [name for name in bot_names_to_check if name]
+                    bot_names_to_check.extend(["ria", "reeya", "riyu"])
 
+                bot_names_to_check = [name for name in bot_names_to_check if name]
                 print(f"DEBUG_HANDLER: In group, checking for explicit name in text. Names: {bot_names_to_check}")
-                
+
                 found_name_in_text = False
                 for name in bot_names_to_check:
-                    # \b matches word boundary, ensuring "riya" matches "hi riya" but not "priya" 
-                    if re.search(r'\b' + re.escape(name) + r'\b', user_message_lower): 
+                    if re.search(r'\b' + re.escape(name) + r'\b', user_message_lower):
                         found_name_in_text = True
                         print(f"DEBUG_HANDLER: Explicit name '{name}' found in message: '{user_message}'.")
                         break
@@ -187,60 +219,94 @@ if riya_bot:
                     trigger_chatbot = True
                 else:
                     print(f"DEBUG_HANDLER: Explicit name NOT found in message for non-mentioned/non-reply group chat. Not triggering.")
-        
+
+        # Store every group message for tracking
+        if message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
+            await update_chat_history(chat_id, user_first_name, user_username, user_id, user_message, role="user")
+            print(f"DEBUG_HANDLER: Stored group message from {user_username} ({user_first_name}).")
+
         if not trigger_chatbot:
             print("--- DEBUG_HANDLER END (Not triggered by any valid condition) ---\n")
             return
 
         print("DEBUG_HANDLER: Chatbot triggered. Proceeding to Gemini.")
-        
+
         # Send typing action
         await client.send_chat_action(chat_id, ChatAction.TYPING)
         print("DEBUG_HANDLER: Typing action sent.")
 
-
-        # Get chat history for context 
+        # Get chat history for context
         history = await get_chat_history(chat_id)
         print(f"DEBUG_HANDLER: Retrieved chat history for context (last {len(history)} messages).")
-        
+
         convo_history_for_gemini = []
-        # System instruction is crucial for behavior 
-        convo_history_for_gemini.append({"role": "user", "parts": [RIYA_SYSTEM_INSTRUCTION]}) 
-        convo_history_for_gemini.append({"role": "model", "parts": ["Okay, I understand. I will adhere to these rules strictly."]}) # Acknowledge the instruction 
+        convo_history_for_gemini.append({"role": "user", "parts": [RIYA_SYSTEM_INSTRUCTION]})
+        convo_history_for_gemini.append({"role": "model", "parts": ["Okay, I understand. I will adhere to these rules strictly."]})
 
         for msg in history:
             if msg["role"] == "user":
-                convo_history_for_gemini.append({"role": "user", "parts": [msg['text']]})
+                sender_name = msg.get("sender_name", "Unknown")
+                sender_username = msg.get("sender_username", "NoUsername")
+                convo_history_for_gemini.append({"role": "user", "parts": [f"{sender_name} ({sender_username}): {msg['text']}"]})
             elif msg["role"] == "model":
                 convo_history_for_gemini.append({"role": "model", "parts": [msg['text']]})
-        
+
         convo = riya_gemini_model.start_chat(history=convo_history_for_gemini)
         print("DEBUG_HANDLER: Gemini conversation started with history.")
 
-        try:
-            gemini_response = await asyncio.to_thread(convo.send_message, user_message)
+        # Handle special responses for owner
+        greeting = f"Arre Malik {user_first_name}, kya baat hai? 😎" if is_owner else f"Yo {user_first_name}, kya chal raha hai? 😜"
+        if user_message_lower in ["tum kon ho", "tum kaun ho", "who are you"]:
+            bot_reply = f"Main {CHATBOT_NAME} hu, teri wajah se thodi si shaitani aur thodi si masti! 😜"
+        else:
+            try:
+                gemini_response = await asyncio.to_thread(convo.send_message, f"{greeting} {user_message}")
+                if gemini_response and hasattr(gemini_response, 'text') and gemini_response.text:
+                    bot_reply = gemini_response.text.strip()
+                    print(f"DEBUG_HANDLER: Gemini responded (first 50 chars): '{bot_reply[:50]}...'")
+                else:
+                    bot_reply = f"Oops! {CHATBOT_NAME} thodi si confuse ho gayi. Kya bol raha hai, thoda clear bol na! 😅"
+            except Exception as e:
+                print(f"❌ DEBUG_HANDLER: Error generating response for {chat_id}: {e}")
+                bot_reply = f"Arre, {CHATBOT_NAME} ko thodi si chakkar aa rahi hai. Thodi der baad try kar! 😜"
 
-            if gemini_response and hasattr(gemini_response, 'text') and gemini_response.text:
-                bot_reply = gemini_response.text.strip()
-                print(f"DEBUG_HANDLER: Gemini responded (first 50 chars): '{bot_reply[:50]}...'")
-                await message.reply_text(bot_reply, quote=True)
-                
-                await update_chat_history(chat_id, message.from_user.first_name, user_message, role="user")
-                await update_chat_history(chat_id, CHATBOT_NAME, bot_reply, role="model")  
-                print("DEBUG_HANDLER: Chat history updated.")
-            else:
-                print(f"DEBUG_HANDLER: Gemini returned empty or no text for '{user_message}'")
-                await message.reply_text(f"Oops! {CHATBOT_NAME} got a bit confused. Can you rephrase that?", quote=True)
-
-        except Exception as e:
-            print(f"❌ DEBUG_HANDLER: Error generating response for {chat_id}: {e}")
-            await message.reply_text(f"Uh oh! {CHATBOT_NAME} is feeling a bit shy right now. Try again later!", quote=True)
-        
+        await message.reply_text(bot_reply, quote=True)
+        await update_chat_history(chat_id, CHATBOT_NAME, None, client.me.id, bot_reply, role="model")
+        print("DEBUG_HANDLER: Chat history updated.")
         print("--- DEBUG_HANDLER END ---\n")
 
+    # --- History Query Handler ---
+    @riya_bot.on_message(filters.command("history") & (filters.private | filters.group))
+    async def history_handler(client: Client, message: Message):
+        if not chat_history_collection:
+            await message.reply_text("Sorry, meri memory card kharab hai! 😅 History nahi dikha sakti.")
+            return
+
+        chat_id = message.chat.id
+        args = message.text.split(maxsplit=1)
+        if len(args) < 2:
+            await message.reply_text("Arre, kiska history chahiye? Username ya naam daal na! 😎")
+            return
+
+        target = args[1].strip()
+        if target.startswith("@"):
+            target_username = target
+        else:
+            target_username = None
+
+        user_messages = await get_user_history(chat_id, target_username) if target_username else []
+        if not user_messages:
+            await message.reply_text(f"Koi messages nahi mile for {target}. Ya toh yeh shant hai ya galat naam dala! 😜")
+            return
+
+        response = f"**{target} ke kuch messages**:\n\n"
+        for msg in user_messages:
+            response += f"• {msg['sender_name']} ({msg['sender_username']}): {msg['text']}\n"
+
+        await message.reply_text(response, quote=True)
 
     async def start_riya_chatbot():
-        global CHATBOT_NAME 
+        global CHATBOT_NAME
         if riya_bot and not riya_bot.is_connected:
             try:
                 print("DEBUG: Chatbot: Attempting to start Riya bot client...")
@@ -248,11 +314,10 @@ if riya_bot:
                 if riya_bot.me:
                     print(f"DEBUG: Chatbot: Bot's Telegram First Name: {riya_bot.me.first_name}, Username: @{riya_bot.me.username}")
                     print(f"DEBUG: Chatbot: Riya's internal CHATBOT_NAME is: {CHATBOT_NAME}")
-
                 print(f"✅ Chatbot: {CHATBOT_NAME} bot client started successfully.")
             except Exception as e:
                 print(f"❌ Chatbot: Failed to start {CHATBOT_NAME} bot client: {e}")
-    
+
     async def stop_riya_chatbot():
         if riya_bot and riya_bot.is_connected:
             try:
@@ -270,6 +335,7 @@ if riya_bot:
     - Mention {CHATBOT_NAME} (@{CHATBOT_NAME} or its username) in group chats to talk to her.
     - Reply to {CHATBOT_NAME}'s messages to continue the conversation.
     - Type {CHATBOT_NAME} by name in group chats to talk to her (e.g., "Hi {CHATBOT_NAME}").
+    - Use /history @username to see what someone wrote in the group (last 5 messages).
 
-    {CHATBOT_NAME} आपकी हाल की बातचीत का इतिहास याद रखेगी और आपके द्वारा उपयोग की जाने वाली भाषा का पालन करते हुए एक दोस्ताना, चंचल और संक्षिप्त तरीके से जवाब देगी।
+    {CHATBOT_NAME} apki baat sunegi, history yaad rakhegi, aur ekdum desi andaaz mein jawab degi! 😎
     """
