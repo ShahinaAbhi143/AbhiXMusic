@@ -167,7 +167,7 @@ async def stream(
         if count == 0:
             return
         else:
-            link = await brandedBin(msg)
+            link = await abhiBin(msg)
             lines = msg.count("\n")
             if lines >= 17:
                 car = os.linesep.join(msg.split(os.linesep)[:17])

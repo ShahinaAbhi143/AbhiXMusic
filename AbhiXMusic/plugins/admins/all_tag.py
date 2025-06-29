@@ -5,7 +5,7 @@ from pyrogram.enums import ChatType, ChatMemberStatus
 from pyrogram.errors import UserNotParticipant
 from pyrogram.types import ChatPermissions
 from AbhiXMusic import app
-from AbhiXMusic.utils.branded_ban import admin_filter
+from AbhiXMusic.utils.abhi_ban import admin_filter
 
 
 SPAM_CHATS = []

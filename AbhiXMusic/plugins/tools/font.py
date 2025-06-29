@@ -2,7 +2,7 @@ from pyrogram import filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from AbhiXMusic import app
-from AbhiXMusic.utils.branded_font import Fonts
+from AbhiXMusic.utils.abhi_font import Fonts
 
 
 @app.on_message(filters.command(["font", "fonts"]))

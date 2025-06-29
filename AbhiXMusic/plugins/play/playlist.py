@@ -661,7 +661,7 @@ async def add_playlist(client, CallbackQuery, _):
     )
 
 
-@app.on_callback_query(filters.regex("branded_playlist") & ~BANNED_USERS)
+@app.on_callback_query(filters.regex("abhi_playlist") & ~BANNED_USERS)
 @languageCB
 async def add_playlists(client, CallbackQuery, _):
     callback_data = CallbackQuery.data.strip()

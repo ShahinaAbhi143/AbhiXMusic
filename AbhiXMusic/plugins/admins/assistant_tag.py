@@ -6,7 +6,7 @@ from pyrogram.errors import FloodWait
 
 from AbhiXMusic.utils.database import get_assistant
 from AbhiXMusic import app
-from AbhiXMusic.utils.branded_ban import admin_filter
+from AbhiXMusic.utils.abhi_ban import admin_filter
 
 SPAM_CHATS = []
 
