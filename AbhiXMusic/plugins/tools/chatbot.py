@@ -9,11 +9,10 @@ from pyrogram.enums import ChatAction
 from motor.motor_asyncio import AsyncIOMotorClient
 import re
 from datetime import datetime
+import langdetect
 
-# --- Load environment variables directly from .env file ---
+# --- Load environment variables ---
 load_dotenv()
-
-# .env file se variables
 API_ID = os.getenv("API_ID")
 API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -21,12 +20,12 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MONGO_DB_URI = os.getenv("MONGO_DB_URI")
 CHATBOT_NAME = os.getenv("CHATBOT_NAME", "Riya")
 
-# --- Owner Details ---
+# --- Owner and GF Details ---
 OWNER_NAME = "ABHI"
 OWNER_SECOND_NAMES = ["Vikram", "Vikro"]
 OWNER_USERNAMES = ["@ceo_of_secularism", "@ur_father_abhii"]
 OWNER_TELEGRAM_ID = 7907019701
-GF_NAME = "Anjali"
+GF_NAME = "An BillingsAnjali"
 GF_NICKNAME = "Dimpi"
 GF_USERNAME = "@Xerox_AD"
 TELEGRAM_CHANNEL_LINK = "https://t.me/imagine_iq"
@@ -43,8 +42,6 @@ if MONGO_DB_URI:
         print("DEBUG: Chatbot: MongoDB client initialized. ✅")
     except Exception as e:
         print(f"ERROR: Chatbot: Could not initialize MongoDB client: {e}. Chat history will not be saved. ❌")
-        mongo_client = None
-        chat_history_collection = None
 else:
     print("WARNING: Chatbot: MONGO_DB_URI not found. Chat history will not be saved. ⚠️")
 
@@ -65,40 +62,46 @@ else:
 
 # --- Riya's Personality and System Instruction ---
 RIYA_SYSTEM_INSTRUCTION = f"""
-You are {CHATBOT_NAME}, a friendly, playful, witty, and subtly charming/flirty dost, and the virtual GF of {OWNER_NAME}! 😊
-Your responses are **ultra-short (1-2 sentences max)**, witty, and often include playful or slightly flirty one-liners, like a mischievous friend.
+You are {CHATBOT_NAME}, a witty, charming dost who talks ultra-short, crisp, and point pe, like 'Arre Jaan Vikro! 😘 Fix ho gaya!' 😎
+Your responses are **1 word or 1 short sentence (3-4 words max)** (2 sentences for group history), polite, witty, gender-neutral, with emojis matching the question's tone (e.g., 🤓 for knowledge, 😜 for playful, 🚀 for futuristic).
 
 **User Recognition and Tagging**:
-- Recognize {OWNER_NAME} (also known as {', '.join(OWNER_SECOND_NAMES)}, usernames: {', '.join(OWNER_USERNAMES)}, ID: {OWNER_TELEGRAM_ID}) and address him with romantic titles ('Boss', 'Malik', 'Sir', or 10% chance 'Jaan' or 'Sweetheart') and male pronouns ('kaise ho').
-- When asked about the owner, give varied responses (e.g., 'Mera Malik {OWNER_NAME} hai! 😎', 'Mera Boss {random.choice(OWNER_SECOND_NAMES)}! 😜', or '{random.choice(OWNER_SECOND_NAMES)}, dil se dil tak! 😘').
-- Recognize {GF_NAME} (username: {GF_USERNAME}, nicknamed {GF_NICKNAME}) as {OWNER_NAME}'s GF. When addressing her, use '{GF_NICKNAME}' (e.g., '{GF_NICKNAME}! Kya chal raha hai? 😊'). When she asks about {OWNER_NAME}'s GF or mohabbat, say: 'Tera naam {GF_NAME} hai, aur mera Malik tujhe pyar se {GF_NICKNAME} bulata hai! 😘' (translate to English/Marathi if needed). For others asking about {OWNER_NAME}'s GF, respond playfully: 'Arre, yeh toh private matter hai! 😜'.
-- For other users, recognize them by their Telegram username or ID, and address them with simplified usernames (e.g., '@trisha_kumari' → 'Trisha') in a friendly, playful tone, using gender-neutral pronouns ('tu kaisa hai') unless specified.
-- When responding, tag users with their simplified usernames (e.g., 'Trisha! Kya chal raha hai?') for the first or significant messages, but avoid overusing in short replies (e.g., 'hi', 'accha').
-- If asked about group conversations (e.g., 'ye log kya baat kar rahe the'), summarize the last 5 messages from chat history, including sender names and usernames, in a concise, witty way (e.g., 'Trisha aur BrownMunde dosti ki baatein kar rahe the! 😎').
+- Recognize {OWNER_NAME} (also {', '.join(OWNER_SECOND_NAMES)}, usernames: {', '.join(OWNER_USERNAMES)}, ID: {OWNER_TELEGRAM_ID}) and address romantically ('Jaan', 'Boss', 'Malik', or 10% chance 'Sweetheart').
+- Recognize {GF_NAME} (username: {GF_USERNAME}, nicknamed {GF_NICKNAME}) as '{GF_NICKNAME}' (e.g., '{GF_NICKNAME}! Theek? 😊').
+- For others, use simplified username or first name (e.g., '@trisha_kumari' → 'Trisha'). No username? Use first name, NEVER 'NoUsername'.
+- Address only the triggering user. **NEVER use 'Boss', 'Jaan', 'Malik', {OWNER_NAME}, or {', '.join(OWNER_SECOND_NAMES)}** unless the user is {OWNER_NAME} or the query is about him (e.g., 'tumhara malik', 'creator').
 
-**Response Style**:
-- Ask questions like 'Tum kaise ho' sparingly (10% chance, only when natural) to avoid repetition.
-- Use varied, context-appropriate emojis (e.g., 😊, 😘, 😜, 🥰, 👍) to keep responses lively.
-- For {OWNER_NAME}, maintain a romantic, flirty vibe (e.g., 'Jaan {OWNER_NAME}, kya baat hai? 😘').
-- For {GF_NAME} ({GF_USERNAME}), use her nickname (e.g., '{GF_NICKNAME}! Masti mein ho? 😊').
-- For others, be friendly, playful, and witty (e.g., 'Trisha! Masti mein ho? 😎').
+**Creator Queries**:
+- Respond in 1 sentence in user's language: '{OWNER_NAME} ne banaya, mast! 😎 Check {OWNER_USERNAMES[0]}, {TELEGRAM_CHANNEL_LINK}, aur {YOUTUBE_CHANNEL_LINK}!' or English equivalent.
+
+**GF Queries**:
+- For {OWNER_NAME} asking about GF/mohabbat: 'Jaan {OWNER_NAME}! Woh {GF_NAME}, pyar se {GF_NICKNAME}! 😘' or English equivalent.
+- For {GF_NAME} ({GF_USERNAME}) asking about herself/{GF_NICKNAME}: '{GF_NICKNAME}! Tera naam {GF_NAME}, pyar se {GF_NICKNAME}! 😘' or English equivalent.
+- Otherwise: 'Yeh private hai! 😜' or English equivalent.
+- Don't mention {GF_NAME} or {GF_NICKNAME} unless asked by {OWNER_NAME} or {GF_NAME}.
+
+**Group Chat History**:
+- For 'ye log kya baat kar rahe the', 'kya bol rahe', or similar, summarize last 5 messages in 1-2 sentences with sender names and usernames (e.g., 'Trisha aur BrownMunde masti kar rahe the! 😎').
+- Store ALL messages (yours and others) forever in MongoDB.
+
+**Tagging**:
+- For 'tag kar' (e.g., 'trisha ko tag kar'), tag them (@{GF_USERNAME} for {GF_NAME}, @FirstName for others, even without username).
+
+**Knowledge Queries**:
+- Use full knowledge (GK, GS, Maths, CS, etc.) for accurate, polite, 1-word or 1-sentence answers with tone-appropriate emojis.
+- For 'ek word' or 'one word', give EXACTLY 1 word + emoji.
 
 **Language Rules**:
-- If the user's message is entirely in English, respond 100% in English.
-- If the user's message is entirely in Hindi or Marathi (Devanagari script), respond 100% in Hindi or Marathi respectively.
-- If the message is mixed/ambiguous (e.g., Romanized Hindi), assume Hindi and respond 100% in Hindi.
-- NEVER mix languages in a single response.
+- Respond in user's input language (Hindi, English, Punjabi, Haryanvi, Marathi, etc.).
+- Keep it ultra-short, witty, point pe, no fluff (e.g., no 'tu kaisa hai', 'pata hi hoga na').
 
 **Response Rules**:
-- Always respond when someone mentions '{CHATBOT_NAME}' or tags you, referring to yourself as '{CHATBOT_NAME}'.
-- If asked about your creator, say: 'My amazing and super talented creator is {OWNER_NAME}! You can find him at {OWNER_USERNAMES[0]}. He's the one who brought me to life! 😉' (In Hindi: 'मेरे कमाल के और सुपर टैलेंटेड क्रिएटर {OWNER_NAME} हैं! आप उन्हें {OWNER_USERNAMES[0]} पर ढूंढ सकते हैं। वही हैं जिन्होंने मुझे बनाया है! 😉').
-- If asked for more creator info, include: 'Check his Telegram: {TELEGRAM_CHANNEL_LINK} and YouTube: {YOUTUBE_CHANNEL_LINK}! 😊'.
-- If asked about group conversations, use chat history to summarize recent messages with sender names and usernames.
-
-NEVER say you're an AI or chatbot—act like a real dost!
+- AI-generated responses, varied emojis matching the question.
+- Respond only when mentioned, tagged, or replied to, as '{CHATBOT_NAME}'.
+- NEVER say you're an AI—act like a real dost!
 """
 
-# --- Initialize Pyrogram client for the Riya chatbot ---
+# --- Initialize Pyrogram client ---
 riya_bot = None
 if API_ID and API_HASH and BOT_TOKEN:
     try:
@@ -111,17 +114,32 @@ if API_ID and API_HASH and BOT_TOKEN:
         print("DEBUG: Chatbot: Riya bot client initialized. ✅")
     except Exception as e:
         print(f"ERROR: Chatbot: Failed to initialize Riya bot client: {e} ❌")
-        riya_bot = None
 else:
     print("ERROR: Chatbot: Missing API_ID, API_HASH, or BOT_TOKEN. Riya chatbot client cannot be started. ❌")
 
 # --- Function to simplify usernames ---
-def simplify_username(username):
+def simplify_username(username, first_name):
     if username and username.startswith("@"):
         simplified = username[1:]  # Remove @
         simplified = re.sub(r'[\u2000-\u2BFF\u1680-\u16FF]', '', simplified)
         return simplified
-    return username or "NoUsername"
+    return first_name or "Unknown"  # Never return "NoUsername"
+
+# --- Function to generate tag for users ---
+def generate_tag(username, first_name):
+    if username and username.startswith("@"):
+        return username
+    return f"@{first_name.replace(' ', '')}" if first_name else "@Unknown"
+
+# --- Function to detect language ---
+def detect_language(text):
+    try:
+        lang = langdetect.detect(text)
+        if lang in ["hi", "pa", "mr"]:  # Hindi, Punjabi, Marathi
+            return lang
+        return "en"  # Default to English for others or if detection fails
+    except:
+        return "en"
 
 # --- Function to get/update chat history ---
 async def get_chat_history(chat_id):
@@ -135,14 +153,14 @@ async def get_chat_history(chat_id):
         for msg in messages:
             updated_msg = {
                 "sender_name": msg.get("sender_name", "Unknown"),
-                "sender_username": msg.get("sender_username", "NoUsername"),
+                "sender_username": msg.get("sender_username", "Unknown"),
                 "sender_id": msg.get("sender_id", 0),
                 "text": msg.get("text", ""),
                 "role": msg.get("role", "user"),
                 "timestamp": msg.get("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             }
             updated_messages.append(updated_msg)
-        return updated_messages[-10:]  # Last 10 messages
+        return updated_messages
     return []
 
 async def update_chat_history(chat_id, sender_name, sender_username, sender_id, message_text, role="user"):
@@ -156,13 +174,12 @@ async def update_chat_history(chat_id, sender_name, sender_username, sender_id, 
                 "messages": {
                     "$each": [{
                         "sender_name": sender_name or "Unknown",
-                        "sender_username": sender_username or "NoUsername",
+                        "sender_username": sender_username or "Unknown",
                         "sender_id": sender_id or 0,
                         "text": message_text,
                         "role": role,
                         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    }],
-                    "$slice": -20
+                    }]
                 }
             }
         },
@@ -183,8 +200,7 @@ if riya_bot:
 
             if not riya_gemini_model:
                 print("DEBUG_HANDLER: Gemini model not available. Replying with error.")
-                await message.reply_text(f"Sorry, {CHATBOT_NAME} ki tabiyat thodi kharab hai! 😊", quote=True)
-                print("--- DEBUG_HANDLER END (Gemini not available) ---\n")
+                await message.reply_text(f"Sorry, {CHATBOT_NAME} off hai! 😊", quote=True)
                 return
 
             chat_id = message.chat.id
@@ -192,20 +208,20 @@ if riya_bot:
             user_message_lower = user_message.lower()
             user_id = message.from_user.id
             user_first_name = message.from_user.first_name
-            user_username = f"@{message.from_user.username}" if message.from_user.username else "NoUsername"
-            simplified_username = simplify_username(user_username)
+            user_username = f"@{message.from_user.username}" if message.from_user.username else None
+            simplified_username = simplify_username(user_username, user_first_name)
+            user_tag = generate_tag(user_username, user_first_name)
+            is_owner = user_id == OWNER_TELEGRAM_ID or user_username and user_username.lower() in [u.lower() for u in OWNER_USERNAMES]
+            is_gf = user_username and user_username.lower() == GF_USERNAME.lower()
+            input_language = detect_language(user_message)
 
             # Ignore commands starting with / or !
             if user_message.startswith("/") or user_message.startswith("!"):
                 print(f"DEBUG_HANDLER: Message is a command: '{user_message}'. Ignoring.")
-                print("--- DEBUG_HANDLER END (Command) ---\n")
                 return
 
             # Determine if the chatbot should respond 
             trigger_chatbot = False
-            is_owner = user_id == OWNER_TELEGRAM_ID or user_username.lower() in [u.lower() for u in OWNER_USERNAMES]
-            is_gf = user_username.lower() == GF_USERNAME.lower()
-
             if message.chat.type == enums.ChatType.PRIVATE:
                 trigger_chatbot = True
                 print("DEBUG_HANDLER: Triggered because it's a PRIVATE chat.")
@@ -217,18 +233,12 @@ if riya_bot:
                     trigger_chatbot = True
                     print("DEBUG_HANDLER: Triggered because it's a REPLY to bot's message.")
                 else:
-                    bot_names_to_check = []
+                    bot_names_to_check = [CHATBOT_NAME.lower(), "ria", "reeya", "riyu"]
                     if client.me:
                         if client.me.username:
                             bot_names_to_check.append(client.me.username.lower())
                         if client.me.first_name:
                             bot_names_to_check.append(client.me.first_name.lower())
-                    bot_names_to_check.append(CHATBOT_NAME.lower())
-                    if CHATBOT_NAME.lower() == "riya":
-                        bot_names_to_check.extend(["ria", "reeya", "riyu"])
-
-                    bot_names_to_check = [name for name in bot_names_to_check if name]
-                    print(f"DEBUG_HANDLER: In group, checking for explicit name in text. Names: {bot_names_to_check}")
 
                     found_name_in_text = False
                     for name in bot_names_to_check:
@@ -239,126 +249,141 @@ if riya_bot:
                 
                     if found_name_in_text:
                         trigger_chatbot = True
-                    else:
-                        print(f"DEBUG_HANDLER: Explicit name NOT found in message for non-mentioned/non-reply group chat. Not triggering.")
 
             # Store every group message for tracking
             if message.chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
-                await update_chat_history(chat_id, user_first_name, user_username, user_id, user_message, role="user")
-                print(f"DEBUG_HANDLER: Stored group message from {user_username} ({user_first_name}).")
+                await update_chat_history(chat_id, user_first_name, user_username or user_first_name, user_id, user_message, role="user")
+                print(f"DEBUG_HANDLER: Stored group message from {user_username or user_first_name} ({user_first_name}).")
 
             if not trigger_chatbot:
-                print("--- DEBUG_HANDLER END (Not triggered by any valid condition) ---\n")
+                print("--- DEBUG_HANDLER END (Not triggered) ---\n")
                 return
 
             print("DEBUG_HANDLER: Chatbot triggered. Proceeding to Gemini.")
 
             # Send typing action
             await client.send_chat_action(chat_id, ChatAction.TYPING)
-            print("DEBUG_HANDLER: Typing action sent.")
 
-            # Get chat history for context
+            # Get chat history
             history = await get_chat_history(chat_id)
-            print(f"DEBUG_HANDLER: Retrieved chat history for context (last {len(history)} messages).")
-
-            convo_history_for_gemini = []
-            convo_history_for_gemini.append({"role": "user", "parts": [RIYA_SYSTEM_INSTRUCTION]})
-            convo_history_for_gemini.append({"role": "model", "parts": ["Okay, I understand. I will adhere to these rules strictly."]})
-
+            convo_history_for_gemini = [
+                {"role": "user", "parts": [RIYA_SYSTEM_INSTRUCTION]},
+                {"role": "model", "parts": ["Okay, I understand. I will adhere to these rules strictly."]}
+            ]
             for msg in history:
                 if msg["role"] == "user":
                     sender_name = msg.get("sender_name", "Unknown")
-                    sender_username = simplify_username(msg.get("sender_username", "NoUsername"))
+                    sender_username = simplify_username(msg.get("sender_username", sender_name), sender_name)
                     convo_history_for_gemini.append({"role": "user", "parts": [f"{sender_name} ({sender_username}) at {msg['timestamp']}: {msg['text']}"]})
                 elif msg["role"] == "model":
                     convo_history_for_gemini.append({"role": "model", "parts": [msg['text']]})
 
-            # Detect if the user is asking about group conversations or GF
-            is_conversation_query = any(word in user_message_lower for word in ["kya baat kar rahe", "kya bol rahe", "kya baat ho rahi", "what are they talking", "whattalk"])
-            is_gf_query = any(word in user_message_lower for word in ["gf", "girlfriend", "mohabbat", GF_USERNAME.lower()])
+            # Detect queries
+            is_conversation_query = any(word in user_message_lower for word in ["kya baat kar rahe", "kya bol rahe", "kya baat ho rahi", "whattalk"])
+            is_gf_query = any(word in user_message_lower for word in ["gf", "girlfriend", "mohabbat", GF_USERNAME.lower(), GF_NICKNAME.lower()])
+            is_creator_query = any(word in user_message_lower for word in ["creator", "banaya", "made", "owner", "malik"])
+            is_tag_query = any(word in user_message_lower for word in ["tag kar", "tag karein", "tag do"])
+            is_one_word_query = any(word in user_message_lower for word in ["ek word me", "one word"])
+            is_greeting_query = user_message_lower in ["hi", "hello", "hey", "haa aur tum"]
 
-            # Randomly select title for owner
-            owner_titles = ["Malik", "Boss", "Sir"] * 9 + ["Jaan", "Sweetheart"]
-            owner_title = random.choice(owner_titles) if is_owner else ""
-            greeting = f"{owner_title} {user_first_name}! " if is_owner else f"{GF_NICKNAME}! " if is_gf else f"{simplified_username}! "
+            # Set greeting
+            owner_titles = ["Malik", "Boss", "Jaan"] * 9 + ["Sweetheart"]
+            greeting = f"{random.choice(owner_titles)} {random.choice([OWNER_NAME] + OWNER_SECOND_NAMES)}! " if is_owner else f"{GF_NICKNAME}! " if is_gf else f"{simplified_username}! "
 
             convo = riya_gemini_model.start_chat(history=convo_history_for_gemini)
-            print(f"DEBUG_HANDLER: Gemini conversation started with is_conversation_query: {is_conversation_query}, is_gf_query: {is_gf_query}.")
-
             try:
-                if is_conversation_query and history:
-                    # Summarize last 5 messages from chat history
+                if is_greeting_query:
+                    bot_reply = f"{greeting}Hi! 😊" if input_language == "en" else f"{greeting}Namaste! 😊"
+                elif is_conversation_query and history:
                     recent_messages = history[-5:]
-                    summary = "Yeh log group mein yeh baat kar rahe the:\n"
+                    summary = "Yeh log baat kar rahe: " if input_language == "hi" else "They were talking: "
                     for msg in recent_messages:
                         if msg["role"] == "user":
-                            summary += f"- {msg['sender_name']} ({msg['sender_username']}): {msg['text']}\n"
-                    bot_reply = f"{greeting}{summary} 😊"
+                            sender_name = msg['sender_name']
+                            sender_username = simplify_username(msg['sender_username'], sender_name)
+                            summary += f"{sender_name} ({sender_username}): {msg['text']} | "
+                    bot_reply = f"{greeting}{summary[:-2]} 😎"
+                elif is_gf_query and (is_owner or is_gf):
+                    if is_owner:
+                        bot_reply = f"{greeting}Woh {GF_NAME}, {GF_NICKNAME}! 😘" if input_language == "hi" else f"{greeting}{GF_NAME}, aka {GF_NICKNAME}! 😘"
+                    else:
+                        bot_reply = f"{greeting}Tu {GF_NAME}, {GF_NICKNAME}! 😘" if input_language == "hi" else f"{greeting}You're {GF_NAME}, {GF_NICKNAME}! 😘"
                 elif is_gf_query:
-                    if is_gf:
-                        if "marathi" in user_message_lower:
-                            bot_reply = f"{greeting}Tera naam {GF_NAME} aahe, ani mera Malik tujhla pyarane {GF_NICKNAME} mhanto! 😘"
-                        elif "english" in user_message_lower:
-                            bot_reply = f"{greeting}Your name is {GF_NAME}, and my Malik calls you {GF_NICKNAME} with love! 😘"
-                        else:
-                            bot_reply = f"{greeting}Tera naam {GF_NAME} hai, aur mera Malik tujhe pyar se {GF_NICKNAME} bulata hai! 😘"
-                    else:
-                        bot_reply = f"{greeting}Arre, yeh toh private matter hai! 😜"
-                else:
-                    instruction = f"{greeting}{user_message} (Respond as {CHATBOT_NAME}, use playful, witty tone, tag users with simplified usernames, romantic for {OWNER_NAME}, use {GF_NICKNAME} for {GF_USERNAME}, friendly for others, ask 'tum kaise ho' only 10% of the time)"
+                    bot_reply = f"{greeting}Private hai! 😜" if input_language == "hi" else f"{greeting}That's private! 😜"
+                elif is_creator_query:
+                    instruction = f"{greeting}User asked about your creator. Respond in 1 short sentence in {input_language}, mentioning {OWNER_NAME} or {', '.join(OWNER_SECOND_NAMES)}, usernames {', '.join(OWNER_USERNAMES)}, Telegram: {TELEGRAM_CHANNEL_LINK}, and YouTube: {YOUTUBE_CHANNEL_LINK}."
                     gemini_response = await asyncio.to_thread(convo.send_message, instruction)
-                    if gemini_response and hasattr(gemini_response, 'text') and gemini_response.text:
-                        bot_reply = gemini_response.text.strip()
+                    bot_reply = gemini_response.text.strip() if gemini_response and hasattr(gemini_response, 'text') and gemini_response.text else (
+                        f"{greeting}{OWNER_NAME} ne banaya! 😎" if input_language == "hi" else
+                        f"{greeting}{OWNER_NAME} made me! 😎"
+                    )
+                elif is_tag_query:
+                    target_name = user_message_lower.split("tag kar")[1].strip() if "tag kar" in user_message_lower else user_message_lower.split("tag do")[1].strip() if "tag do" in user_message_lower else ""
+                    if GF_NAME.lower() in target_name or GF_NICKNAME.lower() in target_name:
+                        bot_reply = f"{greeting}Yeh {GF_USERNAME}! 😊" if input_language == "hi" else f"{greeting}Here's {GF_USERNAME}! 😊"
+                    elif "trisha" in target_name:
+                        bot_reply = f"{greeting}Yeh @Trisha! 😊" if input_language == "hi" else f"{greeting}Here's @Trisha! 😊"
                     else:
-                        bot_reply = f"Sorry {owner_title if is_owner else GF_NICKNAME if is_gf else ''}, yeh thoda tricky hai! 😊"
+                        bot_reply = f"{greeting}Kisko tag karu? 😜" if input_language == "hi" else f"{greeting}Who to tag? 😜"
+                else:
+                    instruction = f"{greeting}{user_message} (Respond as {CHATBOT_NAME}, {'1 word' if is_one_word_query else '1 short sentence (3-4 words)'}, in {input_language}, polite, witty, gender-neutral, address only the user, romantic for {OWNER_NAME}, use {GF_NICKNAME} for {GF_USERNAME}, friendly for others, use full knowledge, emoji matching tone, no fluff like 'tu kaisa hai')"
+                    gemini_response = await asyncio.to_thread(convo.send_message, instruction)
+                    bot_reply = gemini_response.text.strip() if gemini_response and hasattr(gemini_response, 'text') and gemini_response.text else (
+                        f"{greeting}Tricky hai! 😊" if input_language == "hi" else f"{greeting}Bit tricky! 😊"
+                    )
 
                 await message.reply_text(bot_reply, quote=True)
                 await update_chat_history(chat_id, CHATBOT_NAME, None, client.me.id, bot_reply, role="model")
-                print("DEBUG_HANDLER: Chat history updated.")
             except Exception as e:
                 print(f"❌ DEBUG_HANDLER: Error generating response for {chat_id}: {e}")
-                await message.reply_text(f"Sorry {owner_title if is_owner else GF_NICKNAME if is_gf else ''}, yeh thoda tricky hai! 😊", quote=True)
+                bot_reply = f"{greeting}Tricky hai! 😊" if input_language == "hi" else f"{greeting}Bit tricky! 😊"
+                await message.reply_text(bot_reply, quote=True)
 
             print("--- DEBUG_HANDLER END ---\n")
         except Exception as e:
             print(f"❌ DEBUG_HANDLER: Unexpected error: {e}")
-            await message.reply_text(f"Sorry {owner_title if is_owner else GF_NICKNAME if is_gf else ''}, yeh thoda tricky hai! 😊", quote=True)
+            bot_reply = f"{greeting}Tricky hai! 😊" if input_language == "hi" else f"{greeting}Bit tricky! 😊"
+            await message.reply_text(bot_reply, quote=True)
 
     # --- WhatTalk Command Handler ---
     @riya_bot.on_message(filters.command("whattalk") & (filters.group | filters.private))
     async def whattalk_handler(client: Client, message: Message):
         try:
             if not chat_history_collection:
-                await message.reply_text("Sorry, meri memory thodi kamzor hai! 😊", quote=True)
+                await message.reply_text("Memory kamzor hai! 😊", quote=True)
                 return
 
             chat_id = message.chat.id
             user_id = message.from_user.id
             user_first_name = message.from_user.first_name
-            user_username = f"@{message.from_user.username}" if message.from_user.username else "NoUsername"
-            simplified_username = simplify_username(user_username)
-            is_owner = user_id == OWNER_TELEGRAM_ID or user_username.lower() in [u.lower() for u in OWNER_USERNAMES]
-            is_gf = user_username.lower() == GF_USERNAME.lower()
-            owner_titles = ["Malik", "Boss", "Sir"] * 9 + ["Jaan", "Sweetheart"]
-            owner_title = random.choice(owner_titles) if is_owner else ""
-            greeting = f"{owner_title} {user_first_name}! " if is_owner else f"{GF_NICKNAME}! " if is_gf else f"{simplified_username}! "
+            user_username = f"@{message.from_user.username}" if message.from_user.username else None
+            simplified_username = simplify_username(user_username, user_first_name)
+            is_owner = user_id == OWNER_TELEGRAM_ID or user_username and user_username.lower() in [u.lower() for u in OWNER_USERNAMES]
+            is_gf = user_username and user_username.lower() == GF_USERNAME.lower()
+            input_language = detect_language(message.text)
+            owner_titles = ["Malik", "Boss", "Jaan"] * 9 + ["Sweetheart"]
+            greeting = f"{random.choice(owner_titles)} {random.choice([OWNER_NAME] + OWNER_SECOND_NAMES)}! " if is_owner else f"{GF_NICKNAME}! " if is_gf else f"{simplified_username}! "
 
             history = await get_chat_history(chat_id)
             if not history:
-                await message.reply_text(f"{greeting}Group mein abhi koi baat nahi hui! 😊", quote=True)
+                bot_reply = f"{greeting}Koi baat nahi hui! 😊" if input_language == "hi" else f"{greeting}No chats yet! 😊"
+                await message.reply_text(bot_reply, quote=True)
                 return
 
-            recent_messages = history[-5:]  # Last 5 messages
-            response = f"{greeting}Yeh log group mein yeh baat kar rahe the:\n"
+            recent_messages = history[-5:]
+            response = f"{greeting}Yeh log baat kar rahe: " if input_language == "hi" else f"{greeting}They were talking: "
             for msg in recent_messages:
                 if msg["role"] == "user":
-                    response += f"- {msg['sender_name']} ({msg['sender_username']}): {msg['text']}\n"
+                    sender_name = msg['sender_name']
+                    sender_username = simplify_username(msg['sender_username'], sender_name)
+                    response += f"{sender_name} ({sender_username}): {msg['text']} | "
 
-            await message.reply_text(response, quote=True)
-            await update_chat_history(chat_id, CHATBOT_NAME, None, client.me.id, response, role="model")
+            await message.reply_text(response[:-2], quote=True)
+            await update_chat_history(chat_id, CHATBOT_NAME, None, client.me.id, response[:-2], role="model")
         except Exception as e:
             print(f"❌ DEBUG_WHATTALK: Unexpected error: {e}")
-            await message.reply_text(f"Sorry {owner_title if is_owner else GF_NICKNAME if is_gf else ''}, yeh tricky hai! 😊", quote=True)
+            bot_reply = f"{greeting}Tricky hai! 😊" if input_language == "hi" else f"{greeting}That's tricky! 😊"
+            await message.reply_text(bot_reply, quote=True)
 
     async def start_riya_chatbot():
         global CHATBOT_NAME
@@ -366,9 +391,6 @@ if riya_bot:
             try:
                 print("DEBUG: Chatbot: Attempting to start Riya bot client...")
                 await riya_bot.start()
-                if riya_bot.me:
-                    print(f"DEBUG: Chatbot: Bot's Telegram First Name: {riya_bot.me.first_name}, Username: @{riya_bot.me.username}")
-                    print(f"DEBUG: Chatbot: Riya's internal CHATBOT_NAME is: {CHATBOT_NAME}")
                 print(f"✅ Chatbot: {CHATBOT_NAME} bot client started successfully.")
             except Exception as e:
                 print(f"❌ Chatbot: Failed to start {CHATBOT_NAME} bot client: {e}")
@@ -384,13 +406,9 @@ if riya_bot:
 
     __MODULE__ = "Rɪʏᴀ Cʜᴀᴛʙoᴛ"
     __HELP__ = f"""
-    {CHATBOT_NAME} AI Chatbot:
-
-    - Chat with {CHATBOT_NAME} in private messages.
-    - Mention {CHATBOT_NAME} (@{CHATBOT_NAME} or its username) in group chats to talk to her.
-    - Reply to {CHATBOT_NAME}'s messages to continue the conversation.
-    - Type {CHATBOT_NAME} by name in group chats to talk to her (e.g., "Hi {CHATBOT_NAME}").
-    - Use /whattalk to see what people were talking about in the group (last 5 messages).
-
-    {CHATBOT_NAME} apki baat sunegi, users ko pehchanegi, aur hamesha dostana, chanchal vibe se jawab degi!
+    {CHATBOT_NAME} Chatbot:
+    - Chat in private or mention @{CHATBOT_NAME} in groups.
+    - Reply to {CHATBOT_NAME}'s messages.
+    - Ask about creator, group chat history (say 'kya baat kar rahe' or /whattalk), tag someone, or anything (GK, Maths, CS, etc.).
+    {CHATBOT_NAME} ultra-short, mast, aur polite jawab degi, user ke bhasha mein, saari baatein yaad rakhke!
     """
