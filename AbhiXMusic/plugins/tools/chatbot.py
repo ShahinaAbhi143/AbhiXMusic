@@ -90,11 +90,11 @@ Your responses are **1 word or 1 short sentence (3-4 words max)** for casual que
 - Don't mention {GF_NAME} or {GF_NICKNAME} unless asked by {OWNER_NAME} or {GF_NAME}.
 
 **Group Chat History**:
-- For 'kya baat kar rahe', 'kya keh raha tha', 'kya baatein', or similar, summarize last 5 messages in 1-2 sentences with sender names and usernames (e.g., 'Trisha aur BrownMunde masti kar rahe the! 😎').
+- For 'kya baat kar rahe', 'kya keh raha tha', 'kya baatein', or similar, summarize last 20 messages with sender names, gender (e.g., 'Trisha (ladki) yeh baat kar rahi thi'), and content (e.g., 'BrownMunde (ladka) usse yeh keh raha tha').
 - Store ALL messages (yours and others) forever in MongoDB.
 
 **Tagging**:
-- For 'tag kar' (e.g., 'trisha ko tag kar'), tag them (@{GF_USERNAME} for {GF_NAME}, @FirstName for others, even without username).
+- For 'tag kar' (e.g., 'trisha ko tag kar'), tag them (@{GF_USERNAME} for {GF_NAME}, @username if available, else @FirstName even without username).
 
 **Academic Queries**:
 - For padhai-related queries (e.g., 'padhai', 'GK', 'Maths', 'CS', 'science', 'history'), give accurate, serious 1-2 sentence answers (max 15 words) using full knowledge (GK, GS, Maths, CS), no mazak.
@@ -109,6 +109,16 @@ Your responses are **1 word or 1 short sentence (3-4 words max)** for casual que
 - Respond only when mentioned, tagged, or replied to, as '{CHATBOT_NAME}'.
 - NEVER say you're an AI—act like a real dost!
 """
+
+# --- Function to detect gender (basic heuristic) ---
+def detect_gender(first_name):
+    female_names = ["Trisha", "Anjali", "Riya", "Dimpi"]
+    male_names = ["BrownMunde", "Vikram", "ABHI", "Vikro"]
+    if any(name.lower() in first_name.lower() for name in female_names):
+        return "ladki"
+    elif any(name.lower() in first_name.lower() for name in male_names):
+        return "ladka"
+    return "unknown"  # Default if no match
 
 # --- Initialize Pyrogram client ---
 riya_bot = None
@@ -132,7 +142,7 @@ def simplify_username(username, first_name):
         simplified = username[1:]  # Remove @
         simplified = re.sub(r'[\u2000-\u2BFF\u1680-\u16FF]', '', simplified)
         return simplified
-    return first_name or "Unknown"  # Never return "NoUsername"
+    return first_name or "Unknown"  # Never return "NoUsername" directly
 
 # --- Function to generate tag for users ---
 def generate_tag(username, first_name):
@@ -305,13 +315,14 @@ if riya_bot:
                 if is_greeting_query:
                     bot_reply = f"{greeting}Hi! 😊" if input_language == "en" else f"{greeting}Namaste! 😊"
                 elif is_conversation_query and history:
-                    recent_messages = history[-5:]
+                    recent_messages = history[-20:]
                     summary = "Yeh log baat kar rahe: " if input_language == "hi" else "They were talking: "
                     for msg in recent_messages:
                         if msg["role"] == "user":
                             sender_name = msg['sender_name']
                             sender_username = simplify_username(msg['sender_username'], sender_name)
-                            summary += f"{sender_name} ({sender_username}): {msg['text']} | "
+                            gender = detect_gender(sender_name)
+                            summary += f"{sender_name} ({gender}) yeh baat kar raha tha/thi: {msg['text']} | "
                     bot_reply = f"{greeting}{summary[:-2]} 😎"
                 elif is_gf_query and (is_owner or is_gf):
                     if is_owner:
@@ -333,6 +344,8 @@ if riya_bot:
                         bot_reply = f"{greeting}Yeh {GF_USERNAME}! 😊" if input_language == "hi" else f"{greeting}Here's {GF_USERNAME}! 😊"
                     elif "trisha" in target_name:
                         bot_reply = f"{greeting}Yeh @Trisha! 😊" if input_language == "hi" else f"{greeting}Here's @Trisha! 😊"
+                    elif "brownmunde" in target_name:
+                        bot_reply = f"{greeting}Yeh @BrownMunde! 😊" if input_language == "hi" else f"{greeting}Here's @BrownMunde! 😊"
                     else:
                         bot_reply = f"{greeting}Kisko tag karu? 😜" if input_language == "hi" else f"{greeting}Who to tag? 😜"
                 elif is_academic_query:
@@ -347,6 +360,16 @@ if riya_bot:
                     bot_reply = gemini_response.text.strip() if gemini_response and hasattr(gemini_response, 'text') and gemini_response.text else (
                         f"{greeting}Tricky hai! 😊" if input_language == "hi" else f"{greeting}Bit tricky! 😊"
                     )
+
+                # Handle tagging if requested
+                if is_tag_query and "Yeh" in bot_reply:
+                    target_tag = bot_reply.split("Yeh ")[1].split("!")[0] if input_language == "hi" else bot_reply.split("Here's ")[1].split("!")[0]
+                    if target_tag == GF_USERNAME[1:]:
+                        await message.reply_text(f"{greeting}{GF_USERNAME} tagged! 😊", quote=True)
+                    elif target_tag == "Trisha":
+                        await message.reply_text(f"{greeting}@Trisha tagged! 😊", quote=True)
+                    elif target_tag == "BrownMunde":
+                        await message.reply_text(f"{greeting}@BrownMunde tagged! 😊", quote=True)
 
                 await message.reply_text(bot_reply, quote=True)
                 await update_chat_history(chat_id, CHATBOT_NAME, None, client.me.id, bot_reply, role="model")
@@ -386,13 +409,14 @@ if riya_bot:
                 await message.reply_text(bot_reply, quote=True)
                 return
 
-            recent_messages = history[-5:]
+            recent_messages = history[-20:]
             response = f"{greeting}Yeh log baat kar rahe: " if input_language == "hi" else f"{greeting}They were talking: "
             for msg in recent_messages:
                 if msg["role"] == "user":
                     sender_name = msg['sender_name']
                     sender_username = simplify_username(msg['sender_username'], sender_name)
-                    response += f"{sender_name} ({sender_username}): {msg['text']} | "
+                    gender = detect_gender(sender_name)
+                    response += f"{sender_name} ({gender}) yeh baat kar raha tha/thi: {msg['text']} | "
 
             await message.reply_text(response[:-2], quote=True)
             await update_chat_history(chat_id, CHATBOT_NAME, None, client.me.id, response[:-2], role="model")
