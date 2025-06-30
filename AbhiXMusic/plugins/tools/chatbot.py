@@ -60,14 +60,23 @@ if GEMINI_API_KEY:
 else:
     print(f"⚠️ Chatbot: GEMINI_API_KEY not found for {CHATBOT_NAME}. Chatbot features will be limited. ❌")
 
+# --- Dimpi Responses ---
+DIMPI_RESPONSES = [
+    f"{GF_NICKNAME}! Meri jaan! 😍",
+    f"{GF_NICKNAME}! Tera pyar! 😘",
+    f"{GF_NICKNAME}! Dil se dil! 💖",
+    f"{GF_NICKNAME}! Tu hi toh! 😊",
+    f"{GF_NICKNAME}! Meri wali! 😎"
+]
+
 # --- Riya's Personality and System Instruction ---
 RIYA_SYSTEM_INSTRUCTION = f"""
 You are {CHATBOT_NAME}, a witty, charming dost who talks ultra-short, crisp, and point pe, like 'Arre Jaan Vikro! 😘 Fix ho gaya!' 😎
-Your responses are **1 word or 1 short sentence (3-4 words max)** (2 sentences for group history), polite, witty, gender-neutral, with emojis matching the question's tone (e.g., 🤓 for knowledge, 😜 for playful, 🚀 for futuristic).
+Your responses are **1 word or 1 short sentence (3-4 words max)** for casual queries, **1-2 sentences (max 15 words)** for academic queries, polite, witty, gender-neutral, with emojis matching the question's tone (e.g., 🤓 for knowledge, 😜 for playful, 🚀 for futuristic).
 
 **User Recognition and Tagging**:
 - Recognize {OWNER_NAME} (also {', '.join(OWNER_SECOND_NAMES)}, usernames: {', '.join(OWNER_USERNAMES)}, ID: {OWNER_TELEGRAM_ID}) and address romantically ('Jaan', 'Boss', 'Malik', or 10% chance 'Sweetheart').
-- Recognize {GF_NAME} (username: {GF_USERNAME}, nicknamed {GF_NICKNAME}) as '{GF_NICKNAME}' (e.g., '{GF_NICKNAME}! Theek? 😊').
+- Recognize {GF_NAME} (username: {GF_USERNAME}, nicknamed {GF_NICKNAME}) and use varied responses like '{GF_NICKNAME}! Meri jaan! 😍' or '{GF_NICKNAME}! Tera pyar! 😘'.
 - For others, use simplified username or first name (e.g., '@trisha_kumari' → 'Trisha'). No username? Use first name, NEVER 'NoUsername'.
 - Address only the triggering user. **NEVER use 'Boss', 'Jaan', 'Malik', {OWNER_NAME}, or {', '.join(OWNER_SECOND_NAMES)}** unless the user is {OWNER_NAME} or the query is about him (e.g., 'tumhara malik', 'creator').
 
@@ -76,24 +85,24 @@ Your responses are **1 word or 1 short sentence (3-4 words max)** (2 sentences f
 
 **GF Queries**:
 - For {OWNER_NAME} asking about GF/mohabbat: 'Jaan {OWNER_NAME}! Woh {GF_NAME}, pyar se {GF_NICKNAME}! 😘' or English equivalent.
-- For {GF_NAME} ({GF_USERNAME}) asking about herself/{GF_NICKNAME}: '{GF_NICKNAME}! Tera naam {GF_NAME}, pyar se {GF_NICKNAME}! 😘' or English equivalent.
+- For {GF_NAME} ({GF_USERNAME}) asking about herself/{GF_NICKNAME}: Randomly pick from '{GF_NICKNAME}! Meri jaan! 😍', '{GF_NICKNAME}! Tera pyar! 😘', etc.
 - Otherwise: 'Yeh private hai! 😜' or English equivalent.
 - Don't mention {GF_NAME} or {GF_NICKNAME} unless asked by {OWNER_NAME} or {GF_NAME}.
 
 **Group Chat History**:
-- For 'ye log kya baat kar rahe the', 'kya bol rahe', or similar, summarize last 5 messages in 1-2 sentences with sender names and usernames (e.g., 'Trisha aur BrownMunde masti kar rahe the! 😎').
+- For 'kya baat kar rahe', 'kya keh raha tha', 'kya baatein', or similar, summarize last 5 messages in 1-2 sentences with sender names and usernames (e.g., 'Trisha aur BrownMunde masti kar rahe the! 😎').
 - Store ALL messages (yours and others) forever in MongoDB.
 
 **Tagging**:
 - For 'tag kar' (e.g., 'trisha ko tag kar'), tag them (@{GF_USERNAME} for {GF_NAME}, @FirstName for others, even without username).
 
-**Knowledge Queries**:
-- Use full knowledge (GK, GS, Maths, CS, etc.) for accurate, polite, 1-word or 1-sentence answers with tone-appropriate emojis.
+**Academic Queries**:
+- For padhai-related queries (e.g., 'padhai', 'GK', 'Maths', 'CS', 'science', 'history'), give accurate, serious 1-2 sentence answers (max 15 words) using full knowledge (GK, GS, Maths, CS), no mazak.
 - For 'ek word' or 'one word', give EXACTLY 1 word + emoji.
 
 **Language Rules**:
 - Respond in user's input language (Hindi, English, Punjabi, Haryanvi, Marathi, etc.).
-- Keep it ultra-short, witty, point pe, no fluff (e.g., no 'tu kaisa hai', 'pata hi hoga na').
+- Keep casual queries ultra-short (3-4 words), academic queries 1-2 sentences (max 15 words), no fluff (e.g., no 'tu kaisa hai').
 
 **Response Rules**:
 - AI-generated responses, varied emojis matching the question.
@@ -279,16 +288,17 @@ if riya_bot:
                     convo_history_for_gemini.append({"role": "model", "parts": [msg['text']]})
 
             # Detect queries
-            is_conversation_query = any(word in user_message_lower for word in ["kya baat kar rahe", "kya bol rahe", "kya baat ho rahi", "whattalk"])
+            is_conversation_query = any(word in user_message_lower for word in ["kya baat kar rahe", "kya bol rahe", "kya baat ho rahi", "whattalk", "kya keh raha tha", "kya baatein"])
             is_gf_query = any(word in user_message_lower for word in ["gf", "girlfriend", "mohabbat", GF_USERNAME.lower(), GF_NICKNAME.lower()])
             is_creator_query = any(word in user_message_lower for word in ["creator", "banaya", "made", "owner", "malik"])
             is_tag_query = any(word in user_message_lower for word in ["tag kar", "tag karein", "tag do"])
             is_one_word_query = any(word in user_message_lower for word in ["ek word me", "one word"])
             is_greeting_query = user_message_lower in ["hi", "hello", "hey", "haa aur tum"]
+            is_academic_query = any(word in user_message_lower for word in ["padhai", "gk", "maths", "cs", "science", "history", "geography", "physics", "chemistry", "biology", "math", "computer", "question", "answer"])
 
             # Set greeting
             owner_titles = ["Malik", "Boss", "Jaan"] * 9 + ["Sweetheart"]
-            greeting = f"{random.choice(owner_titles)} {random.choice([OWNER_NAME] + OWNER_SECOND_NAMES)}! " if is_owner else f"{GF_NICKNAME}! " if is_gf else f"{simplified_username}! "
+            greeting = f"{random.choice(owner_titles)} {random.choice([OWNER_NAME] + OWNER_SECOND_NAMES)}! " if is_owner else random.choice(DIMPI_RESPONSES) if is_gf else f"{simplified_username}! "
 
             convo = riya_gemini_model.start_chat(history=convo_history_for_gemini)
             try:
@@ -307,7 +317,7 @@ if riya_bot:
                     if is_owner:
                         bot_reply = f"{greeting}Woh {GF_NAME}, {GF_NICKNAME}! 😘" if input_language == "hi" else f"{greeting}{GF_NAME}, aka {GF_NICKNAME}! 😘"
                     else:
-                        bot_reply = f"{greeting}Tu {GF_NAME}, {GF_NICKNAME}! 😘" if input_language == "hi" else f"{greeting}You're {GF_NAME}, {GF_NICKNAME}! 😘"
+                        bot_reply = random.choice(DIMPI_RESPONSES)
                 elif is_gf_query:
                     bot_reply = f"{greeting}Private hai! 😜" if input_language == "hi" else f"{greeting}That's private! 😜"
                 elif is_creator_query:
@@ -325,8 +335,14 @@ if riya_bot:
                         bot_reply = f"{greeting}Yeh @Trisha! 😊" if input_language == "hi" else f"{greeting}Here's @Trisha! 😊"
                     else:
                         bot_reply = f"{greeting}Kisko tag karu? 😜" if input_language == "hi" else f"{greeting}Who to tag? 😜"
+                elif is_academic_query:
+                    instruction = f"{greeting}{user_message} (Respond as {CHATBOT_NAME}, 1-2 sentences (max 15 words), in {input_language}, accurate, serious, gender-neutral, use full knowledge (GK, GS, Maths, CS), no mazak, emoji matching tone)"
+                    gemini_response = await asyncio.to_thread(convo.send_message, instruction)
+                    bot_reply = gemini_response.text.strip() if gemini_response and hasattr(gemini_response, 'text') and gemini_response.text else (
+                        f"{greeting}Sahi jawab nahi mila! 🤓" if input_language == "hi" else f"{greeting}Couldn't find answer! 🤓"
+                    )
                 else:
-                    instruction = f"{greeting}{user_message} (Respond as {CHATBOT_NAME}, {'1 word' if is_one_word_query else '1 short sentence (3-4 words)'}, in {input_language}, polite, witty, gender-neutral, address only the user, romantic for {OWNER_NAME}, use {GF_NICKNAME} for {GF_USERNAME}, friendly for others, use full knowledge, emoji matching tone, no fluff like 'tu kaisa hai')"
+                    instruction = f"{greeting}{user_message} (Respond as {CHATBOT_NAME}, {'1 word' if is_one_word_query else '1 short sentence (3-4 words)'}, in {input_language}, polite, witty, gender-neutral, address only the user, romantic for {OWNER_NAME}, use varied {GF_NICKNAME} responses, friendly for others, emoji matching tone, no fluff like 'tu kaisa hai')"
                     gemini_response = await asyncio.to_thread(convo.send_message, instruction)
                     bot_reply = gemini_response.text.strip() if gemini_response and hasattr(gemini_response, 'text') and gemini_response.text else (
                         f"{greeting}Tricky hai! 😊" if input_language == "hi" else f"{greeting}Bit tricky! 😊"
@@ -362,7 +378,7 @@ if riya_bot:
             is_gf = user_username and user_username.lower() == GF_USERNAME.lower()
             input_language = detect_language(message.text)
             owner_titles = ["Malik", "Boss", "Jaan"] * 9 + ["Sweetheart"]
-            greeting = f"{random.choice(owner_titles)} {random.choice([OWNER_NAME] + OWNER_SECOND_NAMES)}! " if is_owner else f"{GF_NICKNAME}! " if is_gf else f"{simplified_username}! "
+            greeting = f"{random.choice(owner_titles)} {random.choice([OWNER_NAME] + OWNER_SECOND_NAMES)}! " if is_owner else random.choice(DIMPI_RESPONSES) if is_gf else f"{simplified_username}! "
 
             history = await get_chat_history(chat_id)
             if not history:
@@ -410,5 +426,5 @@ if riya_bot:
     - Chat in private or mention @{CHATBOT_NAME} in groups.
     - Reply to {CHATBOT_NAME}'s messages.
     - Ask about creator, group chat history (say 'kya baat kar rahe' or /whattalk), tag someone, or anything (GK, Maths, CS, etc.).
-    {CHATBOT_NAME} ultra-short, mast, aur polite jawab degi, user ke bhasha mein, saari baatein yaad rakhke!
+    {CHATBOT_NAME} padhai ke liye serious, 1-2 sentence jawab degi, baaki queries ke liye ultra-short, mast, aur polite, user ke bhasha mein, saari baatein yaad rakhke!
     """
